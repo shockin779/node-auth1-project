@@ -16,6 +16,7 @@ router.post('/register', (req, res) => {
         password = hash;
         Users.add({username, password})
             .then(newUser => {
+                [newUser] = newUser;
                 res.status(201).json(newUser);
             })
             .catch(err => res.status(500).json({message: `An error occured creating user: ${err}`}));
@@ -28,6 +29,7 @@ router.post('/login', (req, res) => {
         .then(foundUser => {
             const [user] = foundUser
             if(user && bcrypt.compareSync(password, user.password)) {
+                req.session.user = user;
                 res.status(200).json({message: `Login successful! Welcome ${user.username}`});
             }
             else {
@@ -36,6 +38,20 @@ router.post('/login', (req, res) => {
         })
         .catch(err => res.status(500).json({message: `An error occured logging in: ${err}`}))
 
+})
+
+router.get('/logout', (req, res) => {
+    if(req.session.user) {
+        req.session.destroy(err => {
+            if(err) {
+                res.status(200).send('There was an issue logging you out!')
+            } else {
+                res.status(200).send('You were never here!')
+            }
+        })
+    } else {
+        res.end('You were not logged in');
+    }
 })
 
 module.exports = router;
